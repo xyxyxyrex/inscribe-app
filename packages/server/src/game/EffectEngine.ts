@@ -6,8 +6,10 @@ export interface ActiveEffects {
   reflectEnd: number;
   gravebindEnd: number;
   gravebindActive: boolean;
+  gravebindAppliedAt: number;
   tidecurseEnd: number;
   tidecurseActive: boolean;
+  tidecurseAppliedAt: number;
   dotTicks: number;
   dotNextTick: number;
   manaDrainTicks: number;
@@ -23,8 +25,10 @@ export function createInitialEffects(): ActiveEffects {
     reflectEnd: 0,
     gravebindEnd: 0,
     gravebindActive: false,
+    gravebindAppliedAt: 0,
     tidecurseEnd: 0,
     tidecurseActive: false,
+    tidecurseAppliedAt: 0,
     dotTicks: 0,
     dotNextTick: 0,
     manaDrainTicks: 0,
@@ -60,9 +64,18 @@ export class EffectEngine {
       p2State.shield = Math.max(0, p2State.shield - GAME.SHIELD_DECAY_PER_SECOND * dtSeconds);
     }
 
-    // 3. Silence Check
-    p1State.silenced = currentTime < p1Effects.silenceEnd;
-    p2State.silenced = currentTime < p2Effects.silenceEnd;
+    // 3. Silence & Indicator Checks
+    p1State.silenced = p1State.silenceSequence.length > 0;
+    p2State.silenced = p2State.silenceSequence.length > 0;
+    
+    p1State.reflecting = currentTime < p1Effects.reflectEnd;
+    p2State.reflecting = currentTime < p2Effects.reflectEnd;
+
+    p1State.cursed = p1Effects.gravebindActive;
+    p2State.cursed = p2Effects.gravebindActive;
+
+    p1State.draining = p1Effects.tidecurseActive;
+    p2State.draining = p2Effects.tidecurseActive;
 
     // 4. Gravebind Curse Expiration
     if (p1Effects.gravebindActive && currentTime > p1Effects.gravebindEnd) {

@@ -1,4 +1,5 @@
-import { SPELLBOOK, SpellId } from "shared";
+import { SPELLBOOK } from "shared";
+import type { SpellId } from "shared";
 
 export class SpellGuideRenderer {
   public static draw(
@@ -23,7 +24,7 @@ export class SpellGuideRenderer {
 
     // Render the Unicode glyph centered
     const fontSize = Math.min(width, height) * 0.5;
-    ctx.font = `bold ${fontSize}px "Outfit", "Inter", sans-serif`;
+    ctx.font = `bold ${fontSize}px "Noto Sans Runic", "Outfit", "Inter", sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     

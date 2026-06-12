@@ -27,6 +27,8 @@ export class DuelRoom extends Room<DuelState> {
     active: false
   };
 
+  private lastOvertimeTickTime: number = 0;
+
   onCreate(options: any) {
     this.setState(new DuelState());
     
@@ -58,6 +60,16 @@ export class DuelRoom extends Room<DuelState> {
         if (this.interruptState.active && this.interruptState.targetPlayer === client.sessionId) {
           this.closeInterruptWindow();
         }
+      }
+    });
+
+    // Message handler: Slot selection
+    this.onMessage("SLOT_SELECT", (client, message: { slot: number }) => {
+      if (this.state.phase !== "active") return;
+      const player = this.playerMap.get(client.sessionId);
+      if (!player) return;
+      if (message.slot >= 1 && message.slot <= 3) {
+        player.selectedSlot = message.slot;
       }
     });
 
@@ -96,7 +108,7 @@ export class DuelRoom extends Room<DuelState> {
           evalPoints = candidatePoints.map(p => ({ x: p.x, y: maxY - p.y }));
         }
 
-        const result = this.recognizer.recognize(evalPoints);
+        const result = this.recognizer.recognize(evalPoints, player.activeChord ? (player.activeChord as SpellId) : undefined);
         
         // Check if the recognized spell matches templates for the currently held chord
         // e.g. Q chord can only match Q spell. Q+W chord can only match Q+W spell.
@@ -115,7 +127,7 @@ export class DuelRoom extends Room<DuelState> {
           }
 
           // 2. Cast race check (confidence > 70% or 55% for Asurel)
-          let earlyLockThreshold = GAME.EARLY_LOCK_THRESHOLD;
+          let earlyLockThreshold: number = GAME.EARLY_LOCK_THRESHOLD;
           if (result.name === "Q+R") {
             // Asurel has a faster cast window (55% threshold)
             earlyLockThreshold = 0.55;
@@ -159,7 +171,7 @@ export class DuelRoom extends Room<DuelState> {
         evalPoints = candidatePoints.map(p => ({ x: p.x, y: maxY - p.y }));
       }
 
-      const result = this.recognizer.recognize(evalPoints);
+      const result = this.recognizer.recognize(evalPoints, player.activeChord ? (player.activeChord as SpellId) : undefined);
       
       // Authoritative verification: Must match held chord and meet accuracy threshold (50% or 0.5)
       const matchesChord = result.name === player.activeChord;
@@ -206,7 +218,7 @@ export class DuelRoom extends Room<DuelState> {
                 // Target most recently sealed slot
                 for (let i = opponent.slots.length - 1; i >= 0; i--) {
                   const slot = opponent.slots[i];
-                  if (slot.filled && sharesElements(slot.spellId as SpellId)) {
+                  if (slot && slot.filled && sharesElements(slot.spellId as SpellId)) {
                     // Nullify slot
                     slot.filled = false;
                     slot.spellId = "";
@@ -230,17 +242,10 @@ export class DuelRoom extends Room<DuelState> {
           });
         } else {
           // --- STANDARD SPELL SEALING ---
-          // Find next empty slot
-          let emptySlotIndex = -1;
-          for (let i = 0; i < player.slots.length; i++) {
-            if (!player.slots[i].filled) {
-              emptySlotIndex = i;
-              break;
-            }
-          }
-
-          if (emptySlotIndex !== -1) {
-            const slot = player.slots[emptySlotIndex];
+          // Seal directly into the selected slot!
+          const targetIndex = player.selectedSlot - 1;
+          const slot = player.slots[targetIndex];
+          if (slot) {
             slot.spellId = result.name;
             slot.accuracy = result.score;
             slot.filled = true;
@@ -255,15 +260,8 @@ export class DuelRoom extends Room<DuelState> {
             client.send("RECOGNITION_RESULT", {
               accuracy: result.score,
               spellId: result.name,
-              slot: emptySlotIndex + 1,
-              message: `Sealed ${SPELLBOOK[result.name].name} (${Math.round(result.score * 100)}% acc) into Slot ${emptySlotIndex + 1}`
-            });
-          } else {
-            client.send("RECOGNITION_RESULT", {
-              accuracy: result.score,
-              spellId: result.name,
-              slot: -1, // slots full
-              message: "Spell queue is full! Cast them first."
+              slot: player.selectedSlot,
+              message: `Sealed ${SPELLBOOK[result.name].name} (${Math.round(result.score * 100)}% acc) into Slot ${player.selectedSlot}`
             });
           }
         }
@@ -286,6 +284,28 @@ export class DuelRoom extends Room<DuelState> {
       // Close interrupt window if this player was drawing
       if (this.interruptState.active && this.interruptState.targetPlayer === client.sessionId) {
         this.closeInterruptWindow();
+      }
+    });
+
+    // Message handler: Break Silence Key (key press while silenced)
+    this.onMessage("BREAK_SILENCE_KEY", (client, message: { key: string }) => {
+      if (this.state.phase !== "active") return;
+      const player = this.playerMap.get(client.sessionId);
+      if (!player || !player.silenced || !player.silenceSequence) return;
+
+      const expectedKey = player.silenceSequence[player.silenceIndex];
+      const pressedKey = message.key.toUpperCase();
+
+      if (pressedKey === expectedKey) {
+        player.silenceIndex++;
+        if (player.silenceIndex >= player.silenceSequence.length) {
+          player.silenceSequence = "";
+          player.silenceIndex = 0;
+          player.silenced = false;
+        }
+      } else {
+        player.silenceIndex = 0;
+        client.send("SILENCE_FAIL");
       }
     });
 
@@ -368,6 +388,26 @@ export class DuelRoom extends Room<DuelState> {
     // 1. Timer countdown
     this.state.timeRemaining = Math.max(0, this.state.timeRemaining - deltaTimeMs / 1000);
     
+    if (this.state.timeRemaining <= 30) {
+      this.state.overtime = true;
+
+      // Tick damage every 1 second (1000ms)
+      if (this.state.timeRemaining > 0) {
+        if (this.lastOvertimeTickTime === 0) {
+          this.lastOvertimeTickTime = currentTime;
+        }
+
+        if (currentTime >= this.lastOvertimeTickTime + 1000) {
+          this.applyOvertimeDamage(this.state.player1);
+          this.applyOvertimeDamage(this.state.player2);
+          this.lastOvertimeTickTime = currentTime;
+        }
+      }
+    } else {
+      this.state.overtime = false;
+      this.lastOvertimeTickTime = 0;
+    }
+    
     if (this.state.timeRemaining <= 0) {
       this.endMatch("timer");
       return;
@@ -392,6 +432,13 @@ export class DuelRoom extends Room<DuelState> {
     // 3. Interrupt window duration check
     if (this.interruptState.active && currentTime > this.interruptState.end) {
       this.closeInterruptWindow();
+    }
+  }
+
+  private applyOvertimeDamage(player: PlayerState) {
+    if (!player) return;
+    if (player.hp > 1) {
+      player.hp = Math.max(1, player.hp - 2);
     }
   }
 

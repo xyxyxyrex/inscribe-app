@@ -1,111 +1,190 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Runic&display=swap');
+@import "tailwindcss";
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
+@layer base {
+  html {
+    font-size: 19.5px;
+  }
+  body {
+    font-family: 'VT323', 'Noto Sans Runic', monospace;
+    background-color: #050408; /* pitch black purple */
+    overflow-x: hidden;
+    color: #cbd5e1;
+    image-rendering: pixelated;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Press Start 2P', 'Noto Sans Runic', monospace;
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+/* Custom Scrollbars - Pixel Style */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #0f172a;
+  border-left: 2px solid #1e293b;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #6b21a8;
+  border: 1px solid #1e0b30;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #86198f;
+}
+
+/* Keyframes & Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
   }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
+
+.animate-fade-in {
+  animation: fadeIn 0.2s steps(4) forwards;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+/* Custom utility definitions */
+.text-2xs {
+  font-size: 0.72rem;
+}
+.text-3xs {
+  font-size: 0.62rem;
+}
+.text-4xs {
+  font-size: 0.52rem;
+}
+.active\:scale-97:active {
+  transform: scale(0.97);
+}
+.active\:scale-95:active {
+  transform: scale(0.95);
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+/* ==========================================================================
+   PIXEL-ART GAME UTILITY CLASSES
+   ========================================================================== */
+
+/* Retro RPG double border boxes */
+.pixel-panel {
+  background-color: #0c0a0f;
+  border: 4px double #7c3aed;
+  box-shadow: 0 0 0 2px #050408, inset 0 0 12px rgba(168, 85, 247, 0.15);
+}
+
+.pixel-panel-cyan {
+  background-color: #080f14;
+  border: 4px double #06b6d4;
+  box-shadow: 0 0 0 2px #050408, inset 0 0 12px rgba(6, 182, 212, 0.15);
+}
+
+.pixel-panel-red {
+  background-color: #12090b;
+  border: 4px double #ef4444;
+  box-shadow: 0 0 0 2px #050408, inset 0 0 12px rgba(239, 68, 68, 0.15);
+}
+
+/* Pixel buttons */
+.pixel-btn {
+  font-family: 'Press Start 2P', monospace;
+  background-color: #581c87;
+  color: #f3e8ff;
+  border: 3px solid #0f051d;
+  box-shadow: inset -2px -2px 0px 0px #3b0764, inset 2px 2px 0px 0px #a855f7;
+  transition: transform 0.05s;
+  image-rendering: pixelated;
+}
+
+.pixel-btn:hover {
+  background-color: #6b21a8;
+  color: #ffffff;
+}
+
+.pixel-btn:active {
+  transform: translateY(2px);
+  box-shadow: inset 2px 2px 0px 0px #1e0b30, inset -2px -2px 0px 0px #7033ab;
+}
+
+.pixel-btn-close {
+  background-color: #334155;
+  color: #f8fafc;
+  border: 3px solid #0f172a;
+  box-shadow: inset -2px -2px 0px 0px #1e293b, inset 2px 2px 0px 0px #64748b;
+}
+
+.pixel-btn-close:hover {
+  background-color: #475569;
+}
+
+/* Pixel Segmented HP/Mana Bar backgrounds */
+.pixel-bar-bg {
+  background-color: #14111c;
+  border: 2px solid #2e263d;
+  padding: 2px;
+  image-rendering: pixelated;
+}
+
+/* Pixel Segmented Fills */
+.pixel-bar-fill-hp {
+  background: repeating-linear-gradient(
+    90deg,
+    #10b981,
+    #10b981 6px,
+    #047857 6px,
+    #047857 8px
+  );
+}
+
+.pixel-bar-fill-enemy-hp {
+  background: repeating-linear-gradient(
+    90deg,
+    #ef4444,
+    #ef4444 6px,
+    #b91c1c 6px,
+    #b91c1c 8px
+  );
+}
+
+.pixel-bar-fill-mana {
+  background: repeating-linear-gradient(
+    90deg,
+    #06b6d4,
+    #06b6d4 6px,
+    #0891b2 6px,
+    #0891b2 8px
+  );
+}
+
+.pixel-bar-fill-shield {
+  background: repeating-linear-gradient(
+    90deg,
+    #a855f7,
+    #a855f7 6px,
+    #7c3aed 6px,
+    #7c3aed 8px
+  );
+}
+
+/* Sprite Animation Classes */
+@keyframes play-sprite-x {
+  from { background-position: 0px 0px; }
+  to { background-position: var(--sprite-end-x) 0px; }
+}
+
+.sprite-vfx-element {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 45;
+  transform: translate(-50%, -50%);
+  animation: play-sprite-x var(--sprite-duration) steps(var(--sprite-frames)) forwards;
 }

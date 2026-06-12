@@ -1,5 +1,5 @@
 import { Client, Room } from "colyseus.js";
-import { StrokePoint } from "shared";
+import type { StrokePoint } from "shared";
 
 const COLYSEUS_URL = (import.meta.env.VITE_COLYSEUS_URL as string) || `ws://${window.location.hostname}:2567`;
 
@@ -46,6 +46,18 @@ export class GameClient {
   public sendCastSpells() {
     if (this.room) {
       this.room.send("CAST_SPELLS");
+    }
+  }
+
+  public sendSlotSelect(slot: 1 | 2 | 3) {
+    if (this.room) {
+      this.room.send("SLOT_SELECT", { slot });
+    }
+  }
+
+  public sendBreakSilenceKey(key: string) {
+    if (this.room) {
+      this.room.send("BREAK_SILENCE_KEY", { key });
     }
   }
 

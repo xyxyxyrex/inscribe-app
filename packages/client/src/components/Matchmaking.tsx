@@ -4,9 +4,10 @@ interface MatchmakingProps {
   onJoin: (username: string) => void;
   status: "idle" | "connecting" | "queueing" | "error";
   errorMessage?: string;
+  onPractice: () => void;
 }
 
-export const Matchmaking: React.FC<MatchmakingProps> = ({ onJoin, status, errorMessage }) => {
+export const Matchmaking: React.FC<MatchmakingProps> = ({ onJoin, status, errorMessage, onPractice }) => {
   const [username, setUsername] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -19,7 +20,7 @@ export const Matchmaking: React.FC<MatchmakingProps> = ({ onJoin, status, errorM
     <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 select-none">
       {/* Premium Glowing Title */}
       <div className="text-center flex flex-col gap-2 mb-10">
-        <h1 className="text-5xl md:text-6xl font-black tracking-widest bg-gradient-to-b from-white to-purple-400 bg-clip-text text-transparent filter drop-shadow-[0_0_20px_rgba(168,85,247,0.3)] font-sans">
+        <h1 className="text-5xl md:text-6xl font-black tracking-widest bg-gradient-to-b from-white to-purple-400 bg-clip-text text-transparent filter drop-shadow-[0_0_20px_rgba(168,85,247,0.3)]">
           SIGIL DUEL
         </h1>
         <p className="text-slate-400 font-medium text-xs md:text-sm tracking-wide max-w-sm mx-auto uppercase">
@@ -55,12 +56,22 @@ export const Matchmaking: React.FC<MatchmakingProps> = ({ onJoin, status, errorM
               </div>
             )}
 
-            <button
-              type="submit"
-              className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 border border-purple-500 text-white font-bold py-2.5 rounded-lg text-xs tracking-widest uppercase transition-all shadow-lg shadow-purple-500/10 active:scale-97 cursor-pointer"
-            >
-              Enter the Arena
-            </button>
+            <div className="flex flex-col gap-2">
+              <button
+                type="submit"
+                className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 border border-purple-500 text-white font-bold py-2.5 rounded-lg text-xs tracking-widest uppercase transition-all shadow-lg shadow-purple-500/10 active:scale-97 cursor-pointer"
+              >
+                Enter the Arena
+              </button>
+              
+              <button
+                type="button"
+                onClick={onPractice}
+                className="bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-purple-500/30 text-purple-300 hover:text-purple-200 font-bold py-2.5 rounded-lg text-xs tracking-widest uppercase transition-all shadow-md active:scale-97 cursor-pointer"
+              >
+                Practice Room (Offline)
+              </button>
+            </div>
           </form>
         )}
 

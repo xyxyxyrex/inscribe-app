@@ -16,11 +16,13 @@ export class SpellResolver {
     casterId: string
   ): SpellResult[] {
     const results: SpellResult[] = [];
+    const filledCount = caster.slots.filter(s => s && s.filled).length;
+    const comboMultiplier = filledCount === 2 ? 1.15 : (filledCount === 3 ? 1.35 : 1.0);
 
     // Process slots in order: slot 1 -> slot 2 -> slot 3
     for (let i = 0; i < caster.slots.length; i++) {
       const slot = caster.slots[i];
-      if (!slot.filled) continue;
+      if (!slot || !slot.filled) continue;
 
       const spellId = slot.spellId as SpellId;
       const spell = SPELLBOOK[spellId];
@@ -64,13 +66,13 @@ export class SpellResolver {
       let silenced = false;
       let message = "";
 
-      // Calculate speed bonus multiplier (1.08)
-      const multiplier = slot.speedBonus ? GAME.SPEED_BONUS_MULTIPLIER : 1.0;
+      // Calculate speed bonus multiplier (1.08) and combo multiplier
+      const multiplier = (slot.speedBonus ? GAME.SPEED_BONUS_MULTIPLIER : 1.0) * comboMultiplier;
 
       // Apply base effects
       switch (spellId) {
         case "Q": { // Quyra (Fire): 12 flat damage + DOT ticks
-          const baseDamage = Math.round(12 * multiplier);
+          const baseDamage = Math.round(12 * slot.accuracy * multiplier);
           if (isReflected) {
             damageDealt = this.applyDamage(caster, Math.round(baseDamage * GAME.REFLECT_DAMAGE_MULTIPLIER));
             const ticks = slot.accuracy >= 0.9 ? 3 : (slot.accuracy >= 0.6 ? 2 : (slot.accuracy >= 0.3 ? 1 : 0));
@@ -141,35 +143,43 @@ export class SpellResolver {
           break;
         }
 
-        case "Q+W": { // Vael (Cinderstorm): 20 burst damage + silences opponent for 1.5s
-          const baseDamage = Math.round(20 * multiplier);
+        case "Q+W": { // Vael (Cinderstorm): Silences opponent
+          const baseLength = Math.max(5, Math.round(5 * (slot.speedBonus ? GAME.SPEED_BONUS_MULTIPLIER : 1.0) * slot.accuracy));
+          const extraKeys = (filledCount >= 2) ? (filledCount * 2) : 0;
+          const length = baseLength + extraKeys;
+          const keys = ["Q", "W", "E", "R"];
+          let seq = "";
+          for (let k = 0; k < length; k++) {
+            seq += keys[Math.floor(Math.random() * keys.length)];
+          }
+
           if (isReflected) {
-            damageDealt = this.applyDamage(caster, Math.round(baseDamage * GAME.REFLECT_DAMAGE_MULTIPLIER));
-            casterEffects.silenceEnd = currentTime + GAME.SILENCE_DURATION_MS;
+            caster.silenceSequence = seq;
+            caster.silenceIndex = 0;
             caster.silenced = true;
-            message = `${spell.name} reflected! Silenced yourself.`;
+            message = `${spell.name} reflected! Silenced yourself. Input sequence ${seq} to break.`;
           } else {
-            damageDealt = this.applyDamage(target, baseDamage);
-            targetEffects.silenceEnd = currentTime + GAME.SILENCE_DURATION_MS;
+            target.silenceSequence = seq;
+            target.silenceIndex = 0;
             target.silenced = true;
             silenced = true;
-            message = `Dealt ${damageDealt} burst damage and silenced opponent.`;
+            message = `Silenced opponent. They need to input sequence: ${seq}`;
           }
           break;
         }
 
         case "Q+E": { // Tharyn (Gravebind): 15 damage + curses opponent's next Eldra cast within 3s
-          const baseDamage = Math.round(15 * multiplier);
+          const baseDamage = Math.round(15 * slot.accuracy * multiplier);
           if (isReflected) {
             damageDealt = this.applyDamage(caster, Math.round(baseDamage * GAME.REFLECT_DAMAGE_MULTIPLIER));
             casterEffects.gravebindActive = true;
-            casterEffects.gravebindEnd = currentTime + GAME.GRAVEBIND_WINDOW_MS;
+            casterEffects.gravebindEnd = currentTime + GAME.GRAVEBIND_WINDOW_MS * comboMultiplier;
             casterEffects.gravebindAppliedAt = currentTime;
             message = `${spell.name} reflected! Cursed yourself.`;
           } else {
             damageDealt = this.applyDamage(target, baseDamage);
             targetEffects.gravebindActive = true;
-            targetEffects.gravebindEnd = currentTime + GAME.GRAVEBIND_WINDOW_MS;
+            targetEffects.gravebindEnd = currentTime + GAME.GRAVEBIND_WINDOW_MS * comboMultiplier;
             targetEffects.gravebindAppliedAt = currentTime;
             message = `Dealt ${damageDealt} damage and cursed opponent's next Eldra cast.`;
           }
@@ -177,7 +187,7 @@ export class SpellResolver {
         }
 
         case "Q+R": { // Asurel (Blinkstrike): 25 damage, no secondary effect
-          const baseDamage = Math.round(25 * multiplier);
+          const baseDamage = Math.round(25 * slot.accuracy * multiplier);
           if (isReflected) {
             damageDealt = this.applyDamage(caster, Math.round(baseDamage * GAME.REFLECT_DAMAGE_MULTIPLIER));
             message = `${spell.name} reflected! Took ${damageDealt} damage.`;
@@ -192,15 +202,15 @@ export class SpellResolver {
           targetEffects.manaDrainTicks = 4;
           targetEffects.manaDrainNextTick = currentTime + 1000;
           targetEffects.tidecurseActive = true;
-          targetEffects.tidecurseEnd = currentTime + GAME.TIDECURSE_DURATION_MS;
+          targetEffects.tidecurseEnd = currentTime + GAME.TIDECURSE_DURATION_MS * comboMultiplier;
           targetEffects.tidecurseAppliedAt = currentTime;
           message = "Applied Tidecurse (mana drain and Wyra debuff).";
           break;
         }
 
         case "W+R": { // Luneth (Mirrorwind): 1.2s reflect window for Q-based spells
-          casterEffects.reflectEnd = currentTime + GAME.MIRRORWIND_WINDOW_MS;
-          message = "Activated Mirrorwind (1.2s reflect window).";
+          casterEffects.reflectEnd = currentTime + GAME.MIRRORWIND_WINDOW_MS * comboMultiplier;
+          message = `Activated Mirrorwind (${(GAME.MIRRORWIND_WINDOW_MS * comboMultiplier / 1000).toFixed(1)}s reflect window).`;
           break;
         }
 

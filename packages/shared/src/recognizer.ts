@@ -1,4 +1,4 @@
-import { SpellId } from "./spells";
+import type { SpellId } from "./spells";
 
 export interface Point {
   x: number;
@@ -186,16 +186,20 @@ export class Recognizer {
     return pts;
   }
 
-  public recognize(points: Point[]): { name: SpellId; score: number } {
+  public recognize(points: Point[], restrictToTemplateName?: SpellId): { name: SpellId; score: number } {
     if (points.length < 2) {
-      return { name: "Q", score: 0 };
+      return { name: restrictToTemplateName || "Q", score: 0 };
     }
 
     const candidate = this.normalize(points);
     let bestDist = Infinity;
     let bestTemplate: Template | null = null;
 
-    for (const temp of this.templates) {
+    const templatesToCompare = restrictToTemplateName
+      ? this.templates.filter(t => t.name === restrictToTemplateName)
+      : this.templates;
+
+    for (const temp of templatesToCompare) {
       const dist = this.distanceAtBestAngle(
         candidate,
         temp,
@@ -210,7 +214,7 @@ export class Recognizer {
     }
 
     if (!bestTemplate) {
-      return { name: "Q", score: 0 };
+      return { name: restrictToTemplateName || "Q", score: 0 };
     }
 
     // Convert average distance to score from 0.0 to 1.0

@@ -1,4 +1,4 @@
-import { SpellId } from "./spells";
+import type { SpellId } from "./spells";
 
 export interface StrokePoint {
   x: number;

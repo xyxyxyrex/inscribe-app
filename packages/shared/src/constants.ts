@@ -1,6 +1,6 @@
 export const GAME = {
   MATCH_DURATION_MS: 90_000,
-  HP_MAX: 100,
+  HP_MAX: 150,
   MANA_MAX: 100,
   MANA_REGEN_PER_SECOND: 5,
   SPEED_BONUS_MULTIPLIER: 1.08,       // +8% effect for cast race winner
